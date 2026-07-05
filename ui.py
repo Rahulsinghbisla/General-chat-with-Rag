@@ -1,6 +1,6 @@
 import streamlit as st
 import requests
-from Rag.Pinecone.Pinecone import load_docs
+from Pinecone import load_docs
 
 st.set_page_config(
     page_title="PDF RAG Chatbot",
