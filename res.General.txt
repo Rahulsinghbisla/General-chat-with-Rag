@@ -1,0 +1,1 @@
+Response in querry of frontent : {'messages': [HumanMessage(content='Hii', additional_kwargs={}, response_metadata={}, id='5c47abea-e543-4576-8968-d65fa665c323'), HumanMessage(content='Hello! How can I assist you today?', additional_kwargs={}, response_metadata={}, id='bb1fbb4d-09e1-4210-96f2-48afca48df14')], 'route': 'general'}
