@@ -4,7 +4,7 @@ from Rag.Pinecone.store import vector_store
 
 def load_docs(file):
     loader = PyPDFLoader(file)
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=700, chunk_overlap=130)
 
     docs = loader.load()
 

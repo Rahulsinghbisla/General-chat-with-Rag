@@ -1,3 +1,4 @@
+from langchain.messages import HumanMessage
 from Rag.Pinecone.store import vector_store
 from Rag.funtion import decompose_to_sentences,filter_chain,llm,doc_eval_chain
 from langchain_core.documents import Document
@@ -5,36 +6,47 @@ from typing import List
 from Rag.state import llm_cls
 import time
 from dotenv import load_dotenv
+from Rag.Pinecone.store import embeddings
 
 load_dotenv()
 
 
 
 def retrieve(state:llm_cls):
+    # Taking more time have to change the embedding models 
     start = time.time()
     print("Enter the Retrieved")
-    question = state['messages'][-1].content
+    human_msgs = [m for m in state['messages'] if isinstance(m, HumanMessage)]
+    question = human_msgs[-1].content
+
+    # Only for check the embedding time for the code 
+    
+    # t0 = time.time()
+    # query_embedding = embeddings.embed_query(question)
+    # t1 = time.time()
     docs = vector_store.similarity_search(query=question,
-                                   k=5)
+                                   k=8)
     print(f"Retrieved after {time.time()-start}")
     print(f"Retrieved {len(docs)} docs")
     return {"docs":docs}
     
 def eval_doc(state: llm_cls):
     UPPER_TH = 0.7
-    LOWER_TH = 0.3
+    LOWER_TH = 0.5
 
     q = state["messages"][-1].content
     scores: List[float] = []
     reasons: List[str] = []
     good: List[Document] = []
 
-    for d in state["docs"]:
-        out = doc_eval_chain.invoke({"question": q, "chunk": d.page_content})
-        print(f"chunk = {d.page_content} \n Doc Eval: score={out.score},\n reason={out.reason}")
+    docs = state['docs']
+    inputs = [{"question": q, "chunk": d.page_content} for d in docs]
+    results = doc_eval_chain.batch(inputs)
+
+    for d, out in zip(docs, results):
+        print(f"chunk = {d.page_content}\nDoc Eval: score={out.score}, reason={out.reason}")
         scores.append(out.score)
         reasons.append(out.reason)
-
         # 5) for CORRECT case we will refine only docs with score > LOWER_TH
         if out.score > LOWER_TH:
             good.append(d)
@@ -63,31 +75,32 @@ def eval_doc(state: llm_cls):
     }
 
 
-def refine(state:llm_cls):
+def refine(state: llm_cls):
     start = time.time()
     q = state['messages'][-1].content
-    context="\n\n".join(d.page_content for d in state["docs"]).strip()
+    context = "\n\n".join(d.page_content for d in state["docs"]).strip()
 
     strips = decompose_to_sentences(context)
 
-    kept: List[str] = []
-    for s in strips:
-        if filter_chain.invoke({"question": q, "sentence": s}).keep:
-            kept.append(s)
+    inputs = [{"question": q, "sentence": s} for s in strips]
+    results = filter_chain.batch(inputs)
 
+    kept = [s for s, r in zip(strips, results) if r.keep]
     refined_context = "\n".join(kept).strip()
+
     print(f"Refined after {time.time()-start}")
     return {
-        "strips":strips,
-        "keep_strips":kept,
-        "refined":refined_context
+        "strips": strips,
+        "keep_strips": kept,
+        "refined": refined_context
     }
 
 def generate(state:llm_cls):
     start = time.time()
     querry = state['messages']
-    context = state['docs']
-    print(context)
+    context = state['good_docs']
+    context2 = state['refined']
+    # print(context)
     prompt=f"""You are a context-based question answering assistant.
 
             You must answer the user ONLY using the information from the CONTEXT extracted from the uploaded book.
@@ -104,7 +117,7 @@ def generate(state:llm_cls):
             7. If only part of the answer is found, answer only with what is available.
 
             CONTEXT:
-            {context}
+            {context2}
 
             USER QUESTION:
             {querry}

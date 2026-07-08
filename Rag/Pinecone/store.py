@@ -8,8 +8,8 @@ load_dotenv()
 pc = Pinecone(api_key="pcsk_4mGPBD_MSvWEvMCg5uJe1p2nbLY8VqiSRwuLbKZwdRWwP54cyvBtmKXXARYhH4JH4u1mqp")
 
 
-index = pc.Index("cuhbot")
+index = pc.Index("rag")
 
-embeddings=OpenAIEmbeddings()
+embeddings=OpenAIEmbeddings(model="text-embedding-3-small")
 
 vector_store = PineconeVectorStore(embedding=embeddings, index=index)
