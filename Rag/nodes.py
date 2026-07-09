@@ -99,7 +99,7 @@ def generate(state:llm_cls):
     start = time.time()
     querry = state['messages']
     context = state['good_docs']
-    context2 = state['refined']
+    # context2 = state['refined']
     # print(context)
     prompt=f"""You are a context-based question answering assistant.
 
@@ -117,7 +117,7 @@ def generate(state:llm_cls):
             7. If only part of the answer is found, answer only with what is available.
 
             CONTEXT:
-            {context2}
+            {context}
 
             USER QUESTION:
             {querry}

@@ -21,3 +21,4 @@ def query_rag(request: ChatRequest):
         return ChatReply(response=[ChatMessage(role="assistant", content=response)])
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
